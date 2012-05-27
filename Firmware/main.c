@@ -25,6 +25,7 @@
 #include "Hardware.h"
 #include "lcd2.h"
 #include "seven_seg.h"
+#include "buttons.h"
 
 
 __CONFIG(FOSC_INTOSCCLK
@@ -36,48 +37,188 @@ __CONFIG(FOSC_INTOSCCLK
         & BOREN_ON
         & IESO_ON
         & FCMEN_ON);
+
 void initTimer();
+void displayTime(int seconds);
+
 BCD_TYPE    bcd;
 
-
+enum stateType
+{
+    COUNTING,
+    SITTING,
+    
+    SETTING_DIGIT0,
+    SETTING_DIGIT1,
+    SETTING_DIGIT2,
+    SETTING_DIGIT3
+};
 
 void main ()
 {
-    int count = 0;
+     // Default timer value to 10 minutes
+    int timerValue = 600;
+   
+    int count = timerValue;
+ 
+    enum stateType state = SITTING;
+
+    // This is used for the blinking during set mode
+    char blink = 0;
+    char currentDigitValue = 0;
 
     lcd_init();
-    bcd.digit0 = 0;
-    bcd.digit1 = 0;
-    bcd.digit2 = 0;
-    bcd.digit3 = 0;
-    lcd_display_digits(bcd);
-
     initTimer();
+    initButtons();
 
-    TRISB7 = 1;
-    TRISB6 = 1;
+    displayTime(timerValue);
 
-    while (1){
-        if (TMR1IF) {
-            count++;
-            bcd.digit0 = count % 10;
-            bcd.digit1 = count / 10;
-            bcd.digit2 = count / 60;
+
+    while (1)
+    {
+        enum button buttonState = getButtonState();
+
+        if (state == SITTING || state == COUNTING)
+        {
+            // Enable set mode
+            if (buttonState == BUTTON_S2)
+            {
+                count = 0;
+                timerValue = 0;
+                currentDigitValue = 0;
+                state = SETTING_DIGIT0;
+                
+                bcd.digit0 = 0xA;
+                bcd.digit1 = 0xA;
+                bcd.digit2 = 0xA;
+                bcd.digit3 = 0xA;
+                lcd_display_digits(bcd);
+            }
+            // Reset the timer
+            else if (buttonState == BUTTON_S3)
+            {
+                count = timerValue;
+                state = SITTING;
+                displayTime(timerValue);
+            }
+
+            // Start the counter
+            else if (state == SITTING && buttonState == BUTTON_S4)
+            {
+                count = timerValue;
+                state = COUNTING;
+                displayTime(count);
+            }
+
+        }
+        else if (state == SETTING_DIGIT0
+                || state == SETTING_DIGIT1
+                || state == SETTING_DIGIT2
+                || state == SETTING_DIGIT3)
+        {
+            if (buttonState == BUTTON_S2)
+            {
+                switch (state)
+                {
+                    case SETTING_DIGIT0:
+                    {
+                        timerValue += currentDigitValue;
+                        currentDigitValue = 0;
+                        state = SETTING_DIGIT1;
+                        break;
+                    }
+                    case SETTING_DIGIT1:
+                    {
+                        timerValue += 10*currentDigitValue;
+                        currentDigitValue = 0;
+                        state = SETTING_DIGIT2;
+                        break;
+                    }
+                    case SETTING_DIGIT2:
+                    {
+                        timerValue += 60*currentDigitValue;
+                        currentDigitValue = 0;
+                        state = SETTING_DIGIT3;
+                        break;
+                    }
+                    case SETTING_DIGIT3:
+                    {
+                        timerValue += 10*60*currentDigitValue;
+                        currentDigitValue = 0;
+                        state = SITTING;
+                        break;
+                    }
+                }
+            }
+            else if (buttonState == BUTTON_S4)
+            {
+                if (currentDigitValue == 9)
+                    currentDigitValue = 0;
+                else
+                    currentDigitValue++;
+            }
+            else if (buttonState == BUTTON_S3)
+            {   
+                if (currentDigitValue == 0)
+                    currentDigitValue = 9;
+                else
+                    currentDigitValue --;
+            }
+        
+            // Update the digit being set on the display
+            switch(state)
+            {
+                case SETTING_DIGIT0:
+                    bcd.digit0 = currentDigitValue;
+                    break;
+                case SETTING_DIGIT1:
+                    bcd.digit1 = currentDigitValue;
+                    break;
+                case SETTING_DIGIT2:
+                    bcd.digit2 = currentDigitValue;
+                    break;
+                case SETTING_DIGIT3:
+                    bcd.digit3 = currentDigitValue;
+                    break;
+            }
             lcd_display_digits(bcd);
-            
-            
-            TMR1IF = 0;
+
         }
 
-        if (!RB6 && !RB7)
+        if (TMR1IF) 
         {
-            count = 0;
-        } else if (!RB6)
-        {
+            switch (state)
+            {
+                case COUNTING:
+                    count--;
+                    displayTime(count);
+                    
+                    if (count == 0)
+                    {
+                        state = SITTING;
+                    }
+                    
+                    break;
+                    
+                case SITTING:
+                    displayTime(timerValue);
+                    break;
 
-        };
+                default:
+                    break;
+                }
+            TMR1IF = 0;
+        }
+    }
+}
 
-    } 
+void displayTime(int seconds)
+{
+    bcd.digit0 = (seconds % 60) % 10;
+    bcd.digit1 = (seconds % 60) / 10;
+    bcd.digit2 = (seconds / 60) % 10;
+    bcd.digit3 = (seconds / 60) / 10;
+    lcd_display_digits(bcd);
 }
 
 void initTimer()
