@@ -1,3 +1,6 @@
+#ifndef BUTTONS_H
+#define BUTTONS_H
+
 #include <htc.h>
 
 enum button
@@ -12,3 +15,4 @@ enum button
 enum button getButtonState();
 void initButtons();
 
+#endif
