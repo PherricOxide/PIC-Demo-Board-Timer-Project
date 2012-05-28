@@ -223,9 +223,9 @@ void displayTime(int seconds)
 void initTimer()
 {
     // Set 2mhz system clock
-    //IRCF0 = 1;
-    //IRCF1 = 0;
-    //IRCF2 = 1;
+    IRCF0 = 1;
+    IRCF1 = 0;
+    IRCF2 = 1;
 
     // Disable timer
     TMR1ON = 0;
@@ -238,8 +238,8 @@ void initTimer()
     // Always count desite gate value
     TMR1GE = 0;
     // Set 1:8 prescalor
-    //T1CKPS0 = 1;
-    //T1CKPS1 = 1;
+    T1CKPS0 = 1;
+    T1CKPS1 = 1;
 
     // Clear overflow flag and timer
     TMR1IF = 0;
