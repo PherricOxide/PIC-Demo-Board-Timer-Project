@@ -62,7 +62,7 @@ void main ()
    
     int count = timerValue;
  
-    enum stateType state = SETTING_DIGIT0;
+    enum stateType state = SITTING;
 
     // This is used for the blinking during set mode
     char currentDigitValue = 0;
