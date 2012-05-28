@@ -21,12 +21,13 @@
 * IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL OR
 * CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
 *********************************************************************/
-#include <htc.h>
-#include "Hardware.h"
-#include "lcd2.h"
 #include "seven_seg.h"
+#include "Hardware.h"
 #include "buttons.h"
+#include "encoder.h"
+#include "lcd2.h"
 
+#include <htc.h>
 
 __CONFIG(FOSC_INTOSCCLK
         & WDTE_OFF
@@ -61,23 +62,22 @@ void main ()
    
     int count = timerValue;
  
-    enum stateType state = SITTING;
+    enum stateType state = SETTING_DIGIT0;
 
     // This is used for the blinking during set mode
-    char blink = 0;
     char currentDigitValue = 0;
 
     lcd_init();
     initTimer();
     initButtons();
+    initEncoder();
 
     displayTime(timerValue);
-
 
     while (1)
     {
         enum button buttonState = getButtonState();
-
+        enum encoderChange encoderState = getEncoderState();
         if (state == SITTING || state == COUNTING)
         {
             // Enable set mode
@@ -109,7 +109,6 @@ void main ()
                 state = COUNTING;
                 displayTime(count);
             }
-
         }
         else if (state == SETTING_DIGIT0
                 || state == SETTING_DIGIT1
@@ -150,14 +149,14 @@ void main ()
                     }
                 }
             }
-            else if (buttonState == BUTTON_S4)
+            else if (buttonState == BUTTON_S4 || encoderState == STEPFORWARD)
             {
                 if (currentDigitValue == 9)
                     currentDigitValue = 0;
                 else
                     currentDigitValue++;
             }
-            else if (buttonState == BUTTON_S3)
+            else if (buttonState == BUTTON_S3 || encoderState == STEPBACKWARD)
             {   
                 if (currentDigitValue == 0)
                     currentDigitValue = 9;
@@ -224,9 +223,9 @@ void displayTime(int seconds)
 void initTimer()
 {
     // Set 2mhz system clock
-    IRCF0 = 1;
-    IRCF1 = 0;
-    IRCF2 = 1;
+    //IRCF0 = 1;
+    //IRCF1 = 0;
+    //IRCF2 = 1;
 
     // Disable timer
     TMR1ON = 0;
@@ -239,8 +238,8 @@ void initTimer()
     // Always count desite gate value
     TMR1GE = 0;
     // Set 1:8 prescalor
-    T1CKPS0 = 1;
-    T1CKPS1 = 1;
+    //T1CKPS0 = 1;
+    //T1CKPS1 = 1;
 
     // Clear overflow flag and timer
     TMR1IF = 0;
