@@ -1,5 +1,8 @@
 // main.c
 
+#include "ledDisplay.h"
+
+
 /*********************************************************************
 * Software License Agreement:
 *
@@ -44,6 +47,9 @@ void displayTime(int seconds);
 
 BCD_TYPE    bcd;
 
+char displayString[] = "POST SQQ   ";
+int displayStringIndex = 0;
+
 enum stateType
 {
     COUNTING,
@@ -59,8 +65,7 @@ void main ()
 {
      // Default timer value to 10 minutes
     int timerValue = 600;
-   
-    int count = timerValue;
+    int count = timerValue << 2;
  
     enum stateType state = SITTING;
 
@@ -71,11 +76,17 @@ void main ()
     initTimer();
     initButtons();
     initEncoder();
-
+    initLedDisplay();
+    
     displayTime(timerValue);
 
     while (1)
     {
+        displayLEDs(1, displayString[displayStringIndex]);
+        displayLEDs(2, displayString[displayStringIndex + 1]);
+        displayLEDs(3, displayString[displayStringIndex + 2]);
+ 
+
         enum button buttonState = getButtonState();
         enum encoderChange encoderState = getEncoderState();
         if (state == SITTING || state == COUNTING)
@@ -97,7 +108,7 @@ void main ()
             // Reset the timer
             else if (buttonState == BUTTON_S3)
             {
-                count = timerValue;
+                count = timerValue << 2;
                 state = SITTING;
                 displayTime(timerValue);
             }
@@ -105,9 +116,9 @@ void main ()
             // Start the counter
             else if (state == SITTING && buttonState == BUTTON_S4)
             {
-                count = timerValue;
+                count = timerValue << 2;
                 state = COUNTING;
-                displayTime(count);
+                displayTime(count >> 2);
             }
         }
         else if (state == SETTING_DIGIT0
@@ -186,11 +197,18 @@ void main ()
 
         if (TMR1IF) 
         {
+            if (count % 2) {
+                displayStringIndex++;
+                if (displayStringIndex >= sizeof(displayString) - 3) {
+                    displayStringIndex = 0;
+                }
+            }
+
             switch (state)
             {
                 case COUNTING:
                     count--;
-                    displayTime(count);
+                    displayTime(count >> 2);
                     
                     if (count == 0)
                     {
@@ -222,9 +240,9 @@ void displayTime(int seconds)
 
 void initTimer()
 {
-    // Set 2mhz system clock
+    // Set 8mhz system clock
     IRCF0 = 1;
-    IRCF1 = 0;
+    IRCF1 = 1;
     IRCF2 = 1;
 
     // Disable timer
