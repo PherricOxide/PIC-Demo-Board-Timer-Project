@@ -1,29 +1,4 @@
-// main.c
-
 #include "ledDisplay.h"
-
-
-/*********************************************************************
-* Software License Agreement:
-*
-* The software supplied herewith by Microchip Technology Incorporated
-* (the "Company") for its PICmicro® Microcontroller is intended and
-* supplied to you, the Company's customer, for use solely and
-* exclusively on Microchip PICmicro Microcontroller products. The
-* software is owned by the Company and/or its supplier, and is
-* protected under applicable copyright laws. All rights are reserved.
-* Any use in violation of the foregoing restrictions may subject the
-* user to criminal sanctions under applicable laws, as well as to
-* civil liability for the breach of the terms and conditions of this
-* license.
-*
-* THIS SOFTWARE IS PROVIDED IN AN "AS IS" CONDITION. NO WARRANTIES,
-* WHETHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING, BUT NOT LIMITED
-* TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-* PARTICULAR PURPOSE APPLY TO THIS SOFTWARE. THE COMPANY SHALL NOT,
-* IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL OR
-* CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
-*********************************************************************/
 #include "seven_seg.h"
 #include "Hardware.h"
 #include "buttons.h"
@@ -50,8 +25,7 @@ BCD_TYPE    bcd;
 char displayString[] = "POST SQQ   ";
 int displayStringIndex = 0;
 
-enum stateType
-{
+enum stateType {
     COUNTING,
     SITTING,
     
@@ -61,18 +35,21 @@ enum stateType
     SETTING_DIGIT3
 };
 
-void main ()
-{
-     // Default timer value to 10 minutes
+void main () {
+    // Current timer state
+    enum stateType state = COUNTING;
+
+    // Default timer value to 10 minutes
     int timerValue = 600;
+
+    // Note that count = 4x number of seconds
     int count = timerValue << 2;
  
-    enum stateType state = SITTING;
-
-    // This is used for the blinking during set mode
+    // This is used for the blinking digit during set mode
     char currentDigitValue = 0;
 
     lcd_init();
+
     initTimer();
     initButtons();
     initEncoder();
@@ -82,18 +59,18 @@ void main ()
 
     while (1)
     {
+        // display the LED string
         displayLEDs(1, displayString[displayStringIndex]);
         displayLEDs(2, displayString[displayStringIndex + 1]);
         displayLEDs(3, displayString[displayStringIndex + 2]);
- 
 
+        // Get user input (buttons and encoder)
         enum button buttonState = getButtonState();
         enum encoderChange encoderState = getEncoderState();
-        if (state == SITTING || state == COUNTING)
-        {
-            // Enable set mode
-            if (buttonState == BUTTON_S2)
-            {
+
+        if (state == SITTING || state == COUNTING) {
+            // User wants to enable set mode
+            if (buttonState == BUTTON_S2) {
                 count = 0;
                 timerValue = 0;
                 currentDigitValue = 0;
@@ -104,32 +81,29 @@ void main ()
                 bcd.digit2 = 0xA;
                 bcd.digit3 = 0xA;
                 lcd_display_digits(bcd);
-            }
-            // Reset the timer
-            else if (buttonState == BUTTON_S3)
-            {
+
+            // User wants to reset the timer
+            } else if (buttonState == BUTTON_S3) {
                 count = timerValue << 2;
                 state = SITTING;
                 displayTime(timerValue);
-            }
 
-            // Start the counter
-            else if (state == SITTING && buttonState == BUTTON_S4)
-            {
+            // User wants to start the timer
+            } else if (state == SITTING && buttonState == BUTTON_S4) {
                 count = timerValue << 2;
                 state = COUNTING;
                 displayTime(count >> 2);
             }
         }
+
+        // If we're already in set mode
         else if (state == SETTING_DIGIT0
                 || state == SETTING_DIGIT1
                 || state == SETTING_DIGIT2
-                || state == SETTING_DIGIT3)
-        {
-            if (buttonState == BUTTON_S2)
-            {
-                switch (state)
-                {
+                || state == SETTING_DIGIT3) {
+            // User wants to save digit and go to next
+            if (buttonState == BUTTON_S2) {
+                switch (state) {
                     case SETTING_DIGIT0:
                     {
                         timerValue += currentDigitValue;
@@ -159,16 +133,13 @@ void main ()
                         break;
                     }
                 }
-            }
-            else if (buttonState == BUTTON_S4 || encoderState == STEPFORWARD)
-            {
+            // User wants to increment digit
+            } else if (buttonState == BUTTON_S4 || encoderState == STEPFORWARD) {
                 if (currentDigitValue == 9)
                     currentDigitValue = 0;
                 else
                     currentDigitValue++;
-            }
-            else if (buttonState == BUTTON_S3 || encoderState == STEPBACKWARD)
-            {   
+            } else if (buttonState == BUTTON_S3 || encoderState == STEPBACKWARD) {
                 if (currentDigitValue == 0)
                     currentDigitValue = 9;
                 else
@@ -195,23 +166,18 @@ void main ()
 
         }
 
-        if (TMR1IF) 
-        {
-            if (count % 2) {
-                displayStringIndex++;
-                if (displayStringIndex >= sizeof(displayString) - 3) {
-                    displayStringIndex = 0;
-                }
+        if (TMR1IF) {
+            displayStringIndex++;
+            if (displayStringIndex >= sizeof(displayString) - 3) {
+                displayStringIndex = 0;
             }
 
-            switch (state)
-            {
+            switch (state) {
                 case COUNTING:
                     count--;
                     displayTime(count >> 2);
                     
-                    if (count == 0)
-                    {
+                    if (count == 0) {
                         state = SITTING;
                     }
                     
@@ -229,8 +195,7 @@ void main ()
     }
 }
 
-void displayTime(int seconds)
-{
+void displayTime(int seconds) {
     bcd.digit0 = (seconds % 60) % 10;
     bcd.digit1 = (seconds % 60) / 10;
     bcd.digit2 = (seconds / 60) % 10;
@@ -238,8 +203,7 @@ void displayTime(int seconds)
     lcd_display_digits(bcd);
 }
 
-void initTimer()
-{
+void initTimer() {
     // Set 8mhz system clock
     IRCF0 = 1;
     IRCF1 = 1;
