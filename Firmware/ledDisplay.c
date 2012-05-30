@@ -11,6 +11,8 @@
 
 
 void initLedDisplay() {
+    VLCDEN = 0;
+    
     // Digit selections
     TRISC2 = 0;
     TRISD0 = 0;

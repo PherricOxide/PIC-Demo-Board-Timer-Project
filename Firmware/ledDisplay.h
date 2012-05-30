@@ -1,6 +1,7 @@
 #ifndef LEDDISPLAY_H
 #define LEDDISPLAY_H
 
+// DP G F E D C B A
 const unsigned char alpha[] = {
     0b01110111, // A
     0b01111100, // b
@@ -21,7 +22,7 @@ const unsigned char alpha[] = {
     0b01100111, // Q
     0b01010000, // R
     0b01101101, // S
-    0b00000111, // T
+    0b00110001, // T
     0b00111110, // U
     0b00011100, // W
     0b00111110, // V
