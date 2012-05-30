@@ -22,7 +22,7 @@ void displayTime(int seconds);
 
 BCD_TYPE    bcd;
 
-char displayString[] = "POST SQQ   ";
+char displayString[] = "    POST SQQ    ";
 int displayStringIndex = 0;
 
 enum stateType {
@@ -60,9 +60,10 @@ void main () {
     while (1)
     {
         // display the LED string
-        displayLEDs(1, displayString[displayStringIndex]);
-        displayLEDs(2, displayString[displayStringIndex + 1]);
-        displayLEDs(3, displayString[displayStringIndex + 2]);
+        displayLEDs(0, displayString[displayStringIndex]);
+        displayLEDs(1, displayString[displayStringIndex + 1]);
+        displayLEDs(2, displayString[displayStringIndex + 2]);
+        displayLEDs(3, displayString[displayStringIndex + 3]);
 
         // Get user input (buttons and encoder)
         enum button buttonState = getButtonState();
@@ -168,7 +169,7 @@ void main () {
 
         if (TMR1IF) {
             displayStringIndex++;
-            if (displayStringIndex >= sizeof(displayString) - 3) {
+            if (displayStringIndex >= sizeof(displayString) - 4) {
                 displayStringIndex = 0;
             }
 
